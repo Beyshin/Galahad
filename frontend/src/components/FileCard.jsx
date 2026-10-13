@@ -1,6 +1,6 @@
 
 const FileCard = (props) => {
-    const {name, s3Key, tags} = props;
+    const {name, s3Key, tags, owner} = props;
 
     return(
         <div className="fileCard flex flex-col bg-amber-100 w-50 h-40 mx-auto">
@@ -11,6 +11,7 @@ const FileCard = (props) => {
                     <li key={tag.name}>{tag.name}</li>
                 ))}
             </ul>
+            <div>Created by: {owner}</div>
         </div>
     )
 }
