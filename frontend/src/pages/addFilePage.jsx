@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 
-const addFilePage = () => {
+const AddFilePage = () => {
     const [tags, setTags] = useState([]);
     const [selectedTags, setSelectedTags] = useState([]);
 
@@ -101,4 +101,4 @@ const addFilePage = () => {
     );
 }
 
-export default addFilePage;
+export default AddFilePage;

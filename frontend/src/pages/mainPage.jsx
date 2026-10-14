@@ -2,7 +2,7 @@ import FileCard from "../components/FileCard.jsx";
 import {useEffect, useState} from "react";
 
 
-const mainPage = () => {
+const MainPage = () => {
     const [files, setFiles] = useState([])
 
     const fetchFiles = async () => {
@@ -40,4 +40,4 @@ const mainPage = () => {
     )
 }
 
-export default mainPage;
+export default MainPage;
