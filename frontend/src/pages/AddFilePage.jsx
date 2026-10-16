@@ -1,17 +1,19 @@
 import {useEffect, useState} from "react";
+import {useCsrf} from "../contexts/CsrfContext.jsx"
 
-const addFilePage = () => {
+const AddFilePage = () => {
     const [tags, setTags] = useState([]);
     const [selectedTags, setSelectedTags] = useState([]);
 
+    const csrfToken = useCsrf();
+
     const fetchTags = async () => {
         try{
-            const response = await fetch("http://localhost:8080/api/tagList", {
+            const response = await fetch("http://localhost:8080/api/tags", {
                 method: "GET"
             })
 
             const data = await response.json();
-            console.log(data)
             setTags(data)
         }catch(err){
             console.error(err)
@@ -24,13 +26,17 @@ const addFilePage = () => {
 
         const form = e.target;
         const formData = new FormData(form);
-        const file = formData.get("file")
-        console.log(file)
 
         try{
-            await fetch("http://localhost:8080/api/addFile/", {
+            await fetch("http://localhost:8080/api/files/", {
                 method: "POST",
                 body: formData,
+                credentials: "include",
+                headers:{
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/json"
+                }
+
             })
         }catch(err){
             console.error(err)
@@ -38,9 +44,21 @@ const addFilePage = () => {
 
     }
 
+    const toggleTag = (tag) => {
+        const isAlreadySelected = selectedTags.some(t => t.id === tag.id);
+
+        if (isAlreadySelected) {
+            setSelectedTags(selectedTags.filter(t => t.id !== tag.id));
+        } else {
+            setSelectedTags([...selectedTags, tag]);
+        }
+    }
+
+
     useEffect(() => {
        fetchTags();
     }, [])
+
 
     return (
         <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -78,7 +96,7 @@ const addFilePage = () => {
                                     type="checkbox"
                                     value={tag.id}
                                     onChange={() => {
-
+                                        toggleTag(tag);
                                     }}
                                     className="w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2"
                                 />
@@ -101,4 +119,4 @@ const addFilePage = () => {
     );
 }
 
-export default addFilePage;
+export default AddFilePage;

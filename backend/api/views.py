@@ -1,21 +1,25 @@
 import json
 
 from django.http.response import JsonResponse
-
 from .models import Tag, File
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
-
 from .serializers import TagSerializer
-
+from django.middleware.csrf import get_token
 
 # Create your views here.
 
 def test(request):
-    return JsonResponse(File.objects.all())
+    return JsonResponse({"message" : "test"})
 
+def get_csrf_token(request):
+    if request.method == "GET":
+        return JsonResponse({"csrf_token" : get_token(request)}, status=200)
+    else:
+        return JsonResponse({"message" : "unsupported method"}, status=400)
+def root_view(request):
+    return JsonResponse({"message" : "Galahad API"})
 
-def list_files(request):
+def files_api(request):
     if request.method == 'GET':
         files = File.objects.all()
         files_data = []
@@ -34,35 +38,33 @@ def list_files(request):
             })
 
         return JsonResponse({'files': files_data})
+    elif request.method == 'POST':
+            ##TODO: TAGS
+            # data = json.loads(request.body)
+            # tags = data.get('tags', [])
+            # print(tags)
+
+            # file_obj = request.FILES.get('file')
+            #
+            # if not file_obj:
+            #     return JsonResponse({'error': 'no file provided'}, status=400)
+
+
+            print(request.body)
+
+            File.objects.create(
+                name="test",
+                s3_key="test post s3",
+            )
+
+            return JsonResponse({"message": "file successfully added"}, status=201)
+    elif request.method == 'DELETE':
+        #TODO:
+        print("DELETE | Remove file")
+        return None
     else:
-        return JsonResponse({"message": "method not allowed"})
+        return JsonResponse({'error': 'unsupported method'}, status=400)
 
-@csrf_exempt
-def add_file(request):
-    if request.method == 'POST':
-        ##TODO: TAGS
-        #data = json.loads(request.body)
-        #tags = data.get('tags', [])
-        #print(tags)
-
-        file_obj = request.FILES.get('file')
-
-        if not file_obj:
-            return JsonResponse({'error': 'no file provided'}, status=400)
-
-        File.objects.create(
-            name="test",
-            s3_key="test post s3",
-        )
-
-        return JsonResponse({"message": "file sucessfully added"}, status=201)
-    else:
-        return JsonResponse({"message": "method not allowed"}, status=405)
-
-
-def remove_file(request):
-    if request.method == 'POST':
-        print("POST | Remove file")
 
 
 class TagListView(generics.ListAPIView):

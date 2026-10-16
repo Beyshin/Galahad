@@ -2,12 +2,14 @@ import FileCard from "../components/FileCard.jsx";
 import {useEffect, useState} from "react";
 
 
-const mainPage = () => {
+const MainPage = () => {
     const [files, setFiles] = useState([])
 
     const fetchFiles = async () => {
         try{
-            const response = await fetch('http://localhost:8080/api/files')
+            const response = await fetch('http://localhost:8080/api/files', {
+                method: "GET",
+            })
 
             if(!response.ok){
                 console.error(response.statusText)
@@ -40,4 +42,4 @@ const mainPage = () => {
     )
 }
 
-export default mainPage;
+export default MainPage;
