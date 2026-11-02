@@ -33,7 +33,7 @@ const MainPage = () => {
             Galahad
             <div className="filesContainer flex flex-row h-full">
                 {files.map((file) => (
-                    <FileCard name={file.name} s3Key={file.s3_key} tags={file.tags} owner={file.created_by}> </FileCard>
+                    <FileCard name={file.name} s3Key={file.s3_key}> </FileCard>
                 ))}
             </div>
         </>

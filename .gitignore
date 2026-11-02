@@ -1,5 +1,6 @@
 backend/*venv
 backend/venv
+backend/.env
 __pycache__
 db.sqlite3
 
@@ -29,6 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
 
 
 package-lock.json

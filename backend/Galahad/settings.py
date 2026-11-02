@@ -11,6 +11,19 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import environ
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+#Zmienne srodowiskowe
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_BUCKET_NAME = env('AWS_BUCKET_NAME')
+AWS_REGION = env('AWS_REGION')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
