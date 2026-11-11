@@ -1,9 +1,11 @@
 import FileCard from "../components/FileCard.jsx";
 import { useEffect, useState } from "react";
 import Button from "../components/Button.jsx";
+import AddFileModal from "../components/AddFileModal.jsx";
 
 const MainPage = () => {
     const [files, setFiles] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchFiles = async () => {
         try {
@@ -60,7 +62,6 @@ const MainPage = () => {
                     <h2 className="text-xl font-semibold text-gray-800">Pliki</h2>
                 </header>
 
-                {/* Files Grid Container */}
                 <div className="flex-1 p-8 overflow-y-auto">
                     {files.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-400">
@@ -83,11 +84,12 @@ const MainPage = () => {
                     <Button
                         color="bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-transform hover:scale-105"
                         text="Dodaj plik"
-                        action={() => console.log('Dodaj plik')}
+                        action={() => setIsModalOpen(true)}
                     />
                 </div>
-
             </main>
+
+            <AddFileModal onClose={() => setIsModalOpen(false)} isOpen={isModalOpen} onSubmit={fetchFiles}></AddFileModal>
         </div>
     );
 };

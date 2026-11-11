@@ -3,6 +3,7 @@ import json
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 from django.conf import settings
 from django.http.response import JsonResponse
 from .models import Tag, File
@@ -43,20 +44,40 @@ def list_files(request):
 @csrf_exempt
 def add_file(request):
     if request.method == 'POST':
-        ##TODO: TAGS
-        #data = json.loads(request.body)
-        #tags = data.get('tags', [])
-        #print(tags)
+
+        file_name = request.POST.get('name')
 
         file_obj = request.FILES.get('file')
+
+        print(f"Received name: {file_name}")
+        print(f"Received file: {file_obj}")
 
         if not file_obj:
             return JsonResponse({'error': 'no file provided'}, status=400)
 
-        File.objects.create(
-            name="test",
-            s3_key="test post s3",
-        )
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION,
+                                 aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                                 aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
+
+        try:
+            s3_client.upload_fileobj(
+                file_obj,
+                settings.AWS_BUCKET_NAME,
+                file_name,
+                ExtraArgs={'ContentType': file_obj.content_type}  # Preserves the file type in S3
+            )
+        except ClientError as e:
+            print(e)
+            return JsonResponse({'error': 'Failed to upload to S3'}, status=500)
+
+        try:
+            new_file = File.objects.create(
+                name=file_name if file_name else file_obj.name,
+                s3_key="test_s3_key",
+            )
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': 'Failed to save to database'}, status=500)
 
         return JsonResponse({"message": "file sucessfully added"}, status=201)
     else:
