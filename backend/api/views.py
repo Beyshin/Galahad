@@ -2,6 +2,7 @@ import json
 
 
 import boto3
+from botocore.client import Config
 from django.conf import settings
 from django.http.response import JsonResponse
 from .models import Tag, File
@@ -68,7 +69,7 @@ def remove_file(request):
 
 def list_files_from_s3(request):
     if request.method == 'GET':
-        s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID)
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
 
         bucket_name = settings.AWS_BUCKET_NAME
 
@@ -80,7 +81,7 @@ def list_files_from_s3(request):
             if 'Contents' in response:
                 for file in response['Contents']:
                     files.append({
-                        'file_name': file['Key'],
+                        'name': file['Key'],
                         'size': file['Size'],
                         'last_modified': file['LastModified'].isoformat(),
                         's3_key': s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file['Key']}, ExpiresIn=3600),

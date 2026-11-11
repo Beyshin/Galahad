@@ -45,7 +45,7 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-    'moz-extension://e554fd57-bfe8-493f-8f81-2a594f939ef7',
+    'moz-extension://e554fd57-bfe8-493f-8f81-2a594f939ef7', #RESTed Rozszerzenie Firefox
 ]
 
 # Application definition

@@ -1,9 +1,6 @@
-import {useEffect, useState} from 'react'
-
 import './App.css'
-import FileCard from "./components/FileCard.jsx";
 import {BrowserRouter, Route, Routes} from "react-router-dom";
-import AddFilePage from "./pages/addFilePage.jsx";
+import AddFilePage from "./pages/AddFilePage.jsx";
 import MainPage from "./pages/MainPage.jsx";
 
 function App() {
