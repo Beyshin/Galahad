@@ -2,14 +2,19 @@ import FileCard from "../components/FileCard.jsx";
 import { useEffect, useState } from "react";
 import Button from "../components/Button.jsx";
 import AddFileModal from "../components/AddFileModal.jsx";
+import {useNavigate} from "react-router-dom";
 
-const MainPage = () => {
+const MainPage = ({setIsAuthenticated}) => {
     const [files, setFiles] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     const fetchFiles = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/files');
+            const response = await fetch('http://localhost:8080/api/files', {
+                method: "GET",
+                credentials: 'include'
+            });
 
             if (!response.ok) {
                 console.error(response.statusText);
@@ -23,6 +28,22 @@ const MainPage = () => {
             console.error(err);
         }
     };
+
+    const logout = async () => {
+        try {
+            const res = await fetch("http://localhost:8080/api/logout/", {
+                method: "POST",
+                credentials: "include"
+            });
+
+            if (res.ok) {
+                setIsAuthenticated(false);
+                navigate("/login");
+            }
+        } catch (err) {
+            console.error("Logout failed:", err);
+        }
+    }
 
     useEffect(() => {
         fetchFiles();
@@ -54,6 +75,9 @@ const MainPage = () => {
                         </li>
                     </ul>
                 </nav>
+                <div className="mx-auto mb-5">
+                    <Button text="Wyloguj" color="bg-red-500" action={logout}/>
+                </div>
             </aside>
 
             <main className="flex-1 relative flex flex-col h-full overflow-hidden">

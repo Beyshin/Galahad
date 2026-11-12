@@ -39,10 +39,12 @@ SECRET_KEY = 'django-insecure-a%2s$jex)euy_*c(_$fat3nra&v!dzg#ocr5g+4@*f7w80!p)#
 DEBUG = True
 
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'moz-extension://e554fd57-bfe8-493f-8f81-2a594f939ef7', #RESTed Rozszerzenie Firefox

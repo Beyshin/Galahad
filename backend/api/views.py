@@ -9,6 +9,7 @@ from django.http.response import JsonResponse
 from .models import Tag, File
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
+from django.contrib.auth import authenticate, login, logout
 
 from .serializers import TagSerializer
 
@@ -18,6 +19,36 @@ from .serializers import TagSerializer
 def test(request):
     return JsonResponse(File.objects.all())
 
+@csrf_exempt
+def login_user(request):
+    if request.method == "POST":
+
+        data = json.loads(request.body)
+
+        username = data.get('username')
+        password = data.get('password')
+
+        print(username, password)
+
+        try:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return JsonResponse({'status': 'logged_in'}, status=200)
+            else:
+                return JsonResponse({'status': 'failed'}, status=401)
+        except ClientError as e:
+            print(e)
+    return JsonResponse({"error": "Method not allowed"}, status=405)
+
+
+@csrf_exempt
+def logout_user(request):
+    if request.method == "POST":
+        logout(request)
+        return JsonResponse({'status': 'logged_out'}, status=200)
+
+    return JsonResponse({"error": "Method not allowed"}, status=405)
 
 def list_files(request):
     if request.method == 'GET':
@@ -43,6 +74,9 @@ def list_files(request):
 
 @csrf_exempt
 def add_file(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
     if request.method == 'POST':
 
         file_name = request.POST.get('name')
@@ -85,10 +119,16 @@ def add_file(request):
 
 
 def remove_file(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
     if request.method == 'POST':
         print("POST | Remove file")
 
 def list_files_from_s3(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
     if request.method == 'GET':
         s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
 
