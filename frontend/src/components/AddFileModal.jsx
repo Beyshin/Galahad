@@ -1,6 +1,7 @@
 import {X, UploadCloud} from "lucide-react";
 import {useState} from "react";
 import Button from "./Button.jsx";
+import {usePopup} from "../context/PopupContext.jsx";
 
 
 
@@ -9,6 +10,7 @@ export default function AddFileModal({onClose, isOpen, onSubmit}) {
     const [isUploading, setIsUploading] = useState(false);
     const [fileName, setFileName] = useState('');
 
+    const {addPopup} = usePopup();
 
     if (!isOpen) return null;
 
@@ -25,13 +27,16 @@ export default function AddFileModal({onClose, isOpen, onSubmit}) {
 
             const res = await fetch("http://localhost:8080/api/addFile/", {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: "include",
             })
 
             if (res.ok) {
                 if (onSubmit) onSubmit();
+                addPopup(`Pomyślnie dodano plik: ${fileName}.`, "success");
                 onClose();
             } else {
+                addPopup("Wystąpił błąd podczas dodawania pliku.", "error")
                 console.error(res.statusText);
             }
         }catch(err){

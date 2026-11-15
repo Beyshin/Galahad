@@ -5,6 +5,7 @@ import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.http.response import JsonResponse
 from .models import Tag, File
 from django.views.decorators.csrf import csrf_exempt
@@ -41,7 +42,7 @@ def login_user(request):
             print(e)
     return JsonResponse({"error": "Method not allowed"}, status=405)
 
-
+#POST /api/logout
 @csrf_exempt
 def logout_user(request):
     if request.method == "POST":
@@ -50,28 +51,7 @@ def logout_user(request):
 
     return JsonResponse({"error": "Method not allowed"}, status=405)
 
-def list_files(request):
-    if request.method == 'GET':
-        files = File.objects.all()
-        files_data = []
-
-        tag = request.GET.get('tag')
-
-        if tag :
-            files = files.filter(tags__name=tag)
-
-        for f in files:
-            files_data.append({
-                'name' : f.name,
-                's3_key': f.s3_key,
-                'tags': [{"name": tag.name, "color": tag.color} for tag in f.tags.all()],
-                'created_by': f.created_by.username,
-            })
-
-        return JsonResponse({'files': files_data})
-    else:
-        return JsonResponse({"message": "method not allowed"})
-
+#POST /api/addFile
 @csrf_exempt
 def add_file(request):
     if not request.user.is_authenticated:
@@ -117,14 +97,28 @@ def add_file(request):
     else:
         return JsonResponse({"message": "method not allowed"}, status=405)
 
-
+# POST /api/removeFile
+@csrf_exempt
 def remove_file(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     if request.method == 'POST':
-        print("POST | Remove file")
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
+        bucket_name = settings.AWS_BUCKET_NAME
 
+        data = json.loads(request.body)
+        s3_key = data.get('s3_key')
+        print(f"Received name: {s3_key}")
+        try:
+            s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
+            return JsonResponse({"message": "file successfully removed"}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": e}, status=500)
+    else:
+        return JsonResponse({"message": "method not allowed"}, status=405)
+
+# GET /api/files
 def list_files_from_s3(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
@@ -145,11 +139,29 @@ def list_files_from_s3(request):
                         'name': file['Key'],
                         'size': file['Size'],
                         'last_modified': file['LastModified'].isoformat(),
-                        's3_key': s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file['Key']}, ExpiresIn=3600),
+                        's3_url': s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file['Key']}, ExpiresIn=3600),
+                        's3_key': file['Key'],
                     })
             return JsonResponse({'files': files})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+
+# GET /api/users
+def get_users(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    if request.method == 'GET':
+        users = User.objects.all()
+        users_data = []
+        for user in users:
+            users_data.append({
+                'username': user.username,
+            })
+
+        return JsonResponse({'users': users_data})
+    else:
+        return JsonResponse({"message": "method not allowed"}, status=405)
+
 
 class TagListView(generics.ListAPIView):
     queryset = Tag.objects.all()

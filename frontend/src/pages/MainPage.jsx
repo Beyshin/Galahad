@@ -3,11 +3,18 @@ import { useEffect, useState } from "react";
 import Button from "../components/Button.jsx";
 import AddFileModal from "../components/AddFileModal.jsx";
 import {useNavigate} from "react-router-dom";
+import ShareModal from "../components/ShareModal.jsx";
+import {usePopup} from "../context/PopupContext.jsx";
 
 const MainPage = ({setIsAuthenticated}) => {
     const [files, setFiles] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [searchResults, setSearchResults] = useState([]);
     const navigate = useNavigate();
+
+    const {addPopup} = usePopup();
 
     const fetchFiles = async () => {
         try {
@@ -38,12 +45,59 @@ const MainPage = ({setIsAuthenticated}) => {
 
             if (res.ok) {
                 setIsAuthenticated(false);
+                addPopup("Pomyślnie wylogowano.", "success");
                 navigate("/login");
             }
         } catch (err) {
+            addPopup("Błąd podczas wylogowania.", "error");
             console.error("Logout failed:", err);
         }
     }
+
+    const shareFile = async (file) => {
+        try{
+            setIsShareModalOpen(true);
+            const res = await fetch("http://localhost:8080/api/users", {
+                method: "GET",
+                credentials: 'include'
+            })
+
+            if (!res.ok) {
+                console.error(res.statusText);
+            }
+            const data = await res.json();
+            setUsers(data["users"]);
+            console.log(data["users"]);
+        }catch(err) {
+            console.error(err);
+        }
+    }
+
+    const removeFile = async (file) => {
+        try{
+            const res = await fetch("http://localhost:8080/api/removeFile/", {
+                method: "POST",
+                credentials: 'include',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    s3_key: file.s3_key,
+                })
+            })
+
+            if (!res.ok) {
+                console.error(res.statusText);
+                addPopup("Wystąpił błąd podczas usuwania pliku.", "error")
+            }
+
+            fetchFiles();
+            addPopup("Pomyślnie usunięto plik.", "success");
+        }catch(err) {
+            console.error(err);
+        }
+    }
+
 
     useEffect(() => {
         fetchFiles();
@@ -65,7 +119,7 @@ const MainPage = ({setIsAuthenticated}) => {
                         </li>
                         <li>
                             <button className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                Udostępnione
+                                Udostępnione dla mnie
                             </button>
                         </li>
                         <li>
@@ -97,7 +151,9 @@ const MainPage = ({setIsAuthenticated}) => {
                                 <FileCard
                                     key={file.s3_key}
                                     name={file.name}
-                                    s3Key={file.s3_key}
+                                    s3Url={file.s3_url}
+                                    onShare={() => shareFile(file)}
+                                    onDelete={() => removeFile(file)}
                                 />
                             ))}
                         </div>
@@ -114,6 +170,21 @@ const MainPage = ({setIsAuthenticated}) => {
             </main>
 
             <AddFileModal onClose={() => setIsModalOpen(false)} isOpen={isModalOpen} onSubmit={fetchFiles}></AddFileModal>
+            <ShareModal onClose={() => setIsShareModalOpen(false)}
+                        isOpen={isShareModalOpen}
+                        onSubmitShare={(users) => console.log(users)}
+                        onSearchChange={(val) => {
+                            if (val.trim().length === 0) {
+                                setSearchResults([]);
+                            } else {
+                                setSearchResults(users.filter(u =>
+                                    u.username.toLowerCase().includes(val.toLowerCase())
+                                ));
+                            }
+                        }}
+                        searchResults={searchResults}
+            >
+            </ShareModal>
         </div>
     );
 };
