@@ -22,6 +22,8 @@ class File(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, default=get_default_user)
 
+    shared_to_users = models.ManyToManyField(User, default=None, blank=True, related_name='shared_to_users')
+
     tags = models.ManyToManyField(Tag, blank=True)
 
 

@@ -11,9 +11,7 @@ from .models import Tag, File
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from django.contrib.auth import authenticate, login, logout
-
 from .serializers import TagSerializer
-
 
 # Create your views here.
 
@@ -23,7 +21,6 @@ def test(request):
 @csrf_exempt
 def login_user(request):
     if request.method == "POST":
-
         data = json.loads(request.body)
 
         username = data.get('username')
@@ -87,7 +84,7 @@ def add_file(request):
         try:
             new_file = File.objects.create(
                 name=file_name if file_name else file_obj.name,
-                s3_key="test_s3_key",
+                s3_key=file_name if file_name else file_obj.name,
                 created_by=request.user
             )
             new_file.save()
@@ -114,14 +111,15 @@ def remove_file(request):
         print(f"Received name: {s3_key}")
         try:
             s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
+            File.objects.filter(s3_key=s3_key).delete()
             return JsonResponse({"message": "file successfully removed"}, status=200)
         except Exception as e:
-            return JsonResponse({"error": e}, status=500)
+            return JsonResponse({"error": str(e)}, status=500)
     else:
         return JsonResponse({"message": "method not allowed"}, status=405)
 
 # GET /api/files
-def list_files_from_s3(request):
+def list_all_files(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
@@ -131,20 +129,22 @@ def list_files_from_s3(request):
         bucket_name = settings.AWS_BUCKET_NAME
 
         try:
-            response = s3_client.list_objects(Bucket=bucket_name)
+            files = File.objects.all()
+            files_data = []
+            for file in files:
+                presigned_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': settings.AWS_BUCKET_NAME, 'Key': file.s3_key},
+                    ExpiresIn=3600
+                )
 
-            files = []
-
-            if 'Contents' in response:
-                for file in response['Contents']:
-                    files.append({
-                        'name': file['Key'],
-                        'size': file['Size'],
-                        'last_modified': file['LastModified'].isoformat(),
-                        's3_url': s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file['Key']}, ExpiresIn=3600),
-                        's3_key': file['Key'],
-                    })
-            return JsonResponse({'files': files}, status=200)
+                files_data.append({
+                    'id': str(file.id),
+                    'name': file.name,
+                    's3_key': file.s3_key,
+                    's3_url': presigned_url,
+                })
+            return JsonResponse({'files': files_data}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     else:
@@ -180,10 +180,47 @@ def list_files_by_share(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
     if request.method == 'GET':
-        #TODO:
-        return JsonResponse({'files': []}, status=200)
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
+        user = request.user
+
+        files = File.objects.filter(shared_to_users=user)
+        files_data = []
+
+        for file in files:
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': settings.AWS_BUCKET_NAME, 'Key': file.s3_key},
+                ExpiresIn=3600
+            )
+            files_data.append({
+                'id': str(file.id),
+                'name': file.name,
+                's3_key': file.s3_key,
+                's3_url': presigned_url,
+            })
+
+        return JsonResponse({'files': files_data}, status=200)
     else:
         return JsonResponse({'message': "method not allowed"}, status=405)
+
+@csrf_exempt
+def share_file(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        file_id = data.get('file_id')
+        users_id = data.get('users_id')
+
+        file = File.objects.get(id=file_id)
+
+        for u_id in users_id:
+            file.shared_to_users.add(u_id)
+
+        return JsonResponse({'message': 'file shared'}, status=200)
+    else:
+        return JsonResponse({'error': 'method not allowed'}, status=405)
+
 # GET /api/users
 def get_users(request):
     if not request.user.is_authenticated:

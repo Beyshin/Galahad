@@ -14,6 +14,7 @@ const MainPage = ({setIsAuthenticated}) => {
     const [type, setType] = useState("all");
     const [searchResults, setSearchResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [sharingFile, setSharingFile] = useState(null);
     const navigate = useNavigate();
 
     const {addPopup} = usePopup();
@@ -75,6 +76,7 @@ const MainPage = ({setIsAuthenticated}) => {
     const shareFile = async (file) => {
         try{
             setIsShareModalOpen(true);
+            setSharingFile(file);
             const res = await fetch("http://localhost:8080/api/users", {
                 method: "GET",
                 credentials: 'include'
@@ -107,6 +109,7 @@ const MainPage = ({setIsAuthenticated}) => {
             if (!res.ok) {
                 console.error(res.statusText);
                 addPopup("Wystąpił błąd podczas usuwania pliku.", "error")
+                return;
             }
 
             fetchFiles(type);
@@ -216,7 +219,28 @@ const MainPage = ({setIsAuthenticated}) => {
             <AddFileModal onClose={() => setIsModalOpen(false)} isOpen={isModalOpen} onSubmit={fetchFiles}></AddFileModal>
             <ShareModal onClose={() => setIsShareModalOpen(false)}
                         isOpen={isShareModalOpen}
-                        onSubmitShare={(users) => console.log(users)}
+                        onSubmitShare={async (users) => {
+                            try{
+                                const users_id = users.map((user) => user.id);
+                                console.log("users id:" + users_id);
+                                console.log("file id: " + sharingFile.id);
+                                const res = await fetch("http://localhost:8080/api/shareFile/", {
+                                    method: "POST",
+                                    credentials: "include",
+                                    headers: {
+                                        "content-type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                        "users_id": users_id,
+                                        "file_id": sharingFile.id
+                                    }),
+                                })
+                            }catch(err){
+                                console.log(err);
+                            }finally {
+                                setSharingFile(null);
+                            }
+                        }}
                         onSearchChange={(val) => {
                             if (val.trim().length === 0) {
                                 setSearchResults([]);
@@ -227,6 +251,7 @@ const MainPage = ({setIsAuthenticated}) => {
                             }
                         }}
                         searchResults={searchResults}
+                        file={sharingFile}
             >
             </ShareModal>
         </div>

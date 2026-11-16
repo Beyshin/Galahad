@@ -21,6 +21,7 @@ export default function LoginPage({setIsAuthenticated}) {
                 headers: {
                     "Content-Type": "application/json",
                 },
+                credentials: "include",
                 body: JSON.stringify({
                     username: username,
                     password: password,

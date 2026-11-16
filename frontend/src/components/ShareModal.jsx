@@ -63,7 +63,7 @@ const ShareModal = ({
                     <X size={20} />
                 </button>
 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Udostępnij plik</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">Udostępnij plik:</h2>
                 <p className="text-sm text-gray-500 mb-6 truncate">
                     {file?.name || "Wybrany plik"}
                 </p>
