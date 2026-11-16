@@ -11,14 +11,29 @@ const MainPage = ({setIsAuthenticated}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [users, setUsers] = useState([]);
+    const [type, setType] = useState("all");
     const [searchResults, setSearchResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const {addPopup} = usePopup();
 
-    const fetchFiles = async () => {
+    const fetchFiles = async (type) => {
         try {
-            const response = await fetch('http://localhost:8080/api/files', {
+            setIsLoading(true);
+            let endpoint = "/files";
+            switch (type) {
+                case "all":
+                    endpoint = "/files";
+                    break;
+                case "mine":
+                    endpoint = "/myFiles";
+                    break;
+                case "shared":
+                    endpoint = "/sharedFiles";
+                    break;
+            }
+            const response = await fetch(`http://localhost:8080/api${endpoint}`, {
                 method: "GET",
                 credentials: 'include'
             });
@@ -31,10 +46,13 @@ const MainPage = ({setIsAuthenticated}) => {
             const files = data["files"] || [];
 
             setFiles(files);
+            setIsLoading(false);
         } catch (err) {
             console.error(err);
+            setIsLoading(false);
         }
     };
+
 
     const logout = async () => {
         try {
@@ -91,7 +109,7 @@ const MainPage = ({setIsAuthenticated}) => {
                 addPopup("Wystąpił błąd podczas usuwania pliku.", "error")
             }
 
-            fetchFiles();
+            fetchFiles(type);
             addPopup("Pomyślnie usunięto plik.", "success");
         }catch(err) {
             console.error(err);
@@ -100,8 +118,8 @@ const MainPage = ({setIsAuthenticated}) => {
 
 
     useEffect(() => {
-        fetchFiles();
-    }, []);
+        fetchFiles(type);
+    }, [type]);
 
     return (
         <div className="flex h-screen w-full bg-gray-50 font-sans">
@@ -113,18 +131,39 @@ const MainPage = ({setIsAuthenticated}) => {
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-2">
                         <li>
-                            <button className="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg transition-colors">
+                            <button
+                                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                                    type === "all"
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-600 hover:bg-gray-100"
+                                }`}
+                                onClick={() => setType("all")}
+                            >
                                 Wszystkie pliki
                             </button>
                         </li>
                         <li>
-                            <button className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                            <button
+                                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                                    type === "shared"
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-600 hover:bg-gray-100"
+                                }`}
+                                onClick={() => setType("shared")}
+                            >
                                 Udostępnione dla mnie
                             </button>
                         </li>
                         <li>
-                            <button className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                                Ostatnie
+                            <button
+                                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                                    type === "mine"
+                                        ? "bg-blue-50 text-blue-700 font-medium"
+                                        : "text-gray-600 hover:bg-gray-100"
+                                }`}
+                                onClick={() => setType("mine")}
+                            >
+                                Moje
                             </button>
                         </li>
                     </ul>
@@ -141,7 +180,12 @@ const MainPage = ({setIsAuthenticated}) => {
                 </header>
 
                 <div className="flex-1 p-8 overflow-y-auto">
-                    {files.length === 0 ? (
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-full text-gray-400">
+                            <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin">
+                            </div>
+                        </div>
+                    ): files.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-400">
                             Brak plików do wyświetlenia.
                         </div>

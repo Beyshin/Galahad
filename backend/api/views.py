@@ -78,7 +78,7 @@ def add_file(request):
                 file_obj,
                 settings.AWS_BUCKET_NAME,
                 file_name,
-                ExtraArgs={'ContentType': file_obj.content_type}  # Preserves the file type in S3
+                ExtraArgs={'ContentType': file_obj.content_type}
             )
         except ClientError as e:
             print(e)
@@ -88,7 +88,9 @@ def add_file(request):
             new_file = File.objects.create(
                 name=file_name if file_name else file_obj.name,
                 s3_key="test_s3_key",
+                created_by=request.user
             )
+            new_file.save()
         except Exception as e:
             print(e)
             return JsonResponse({'error': 'Failed to save to database'}, status=500)
@@ -142,10 +144,46 @@ def list_files_from_s3(request):
                         's3_url': s3_client.generate_presigned_url('get_object', Params={'Bucket': bucket_name, 'Key': file['Key']}, ExpiresIn=3600),
                         's3_key': file['Key'],
                     })
-            return JsonResponse({'files': files})
+            return JsonResponse({'files': files}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+    else:
+        return JsonResponse({"message": "method not allowed"}, status=405)
 
+def list_files_by_user(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    if request.method == 'GET':
+        s3_client = boto3.client('s3', region_name=settings.AWS_REGION, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY, aws_access_key_id=settings.AWS_ACCESS_KEY_ID, config=Config(signature_version='s3v4'))
+        user = request.user
+        files = File.objects.filter(created_by=user)
+        files_data = []
+        for file in files:
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': settings.AWS_BUCKET_NAME, 'Key': file.s3_key},
+                ExpiresIn=3600
+            )
+
+            files_data.append({
+                'id': str(file.id),
+                'name': file.name,
+                's3_key': file.s3_key,
+                's3_url': presigned_url,
+            })
+        return JsonResponse({'files': files_data}, status=200)
+    else:
+        return JsonResponse({'error': 'method not allowed'}, status=405)
+
+
+def list_files_by_share(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    if request.method == 'GET':
+        #TODO:
+        return JsonResponse({'files': []}, status=200)
+    else:
+        return JsonResponse({'message': "method not allowed"}, status=405)
 # GET /api/users
 def get_users(request):
     if not request.user.is_authenticated:
@@ -156,6 +194,7 @@ def get_users(request):
         for user in users:
             users_data.append({
                 'username': user.username,
+                'id': user.id,
             })
 
         return JsonResponse({'users': users_data})
