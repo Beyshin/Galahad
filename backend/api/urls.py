@@ -2,6 +2,7 @@ from django.urls import path
 from .views import test, add_file, TagListView, list_all_files, login_user, logout_user, get_users, \
   remove_file, list_files_by_user, list_files_by_share, share_file
 
+
 urlpatterns = [
   path("test/", test, name='test'),
   path("files/", list_all_files, name='files'),

@@ -74,7 +74,7 @@ def add_file(request):
             s3_client.upload_fileobj(
                 file_obj,
                 settings.AWS_BUCKET_NAME,
-                file_name,
+                file_obj.name,
                 ExtraArgs={'ContentType': file_obj.content_type}
             )
         except ClientError as e:
@@ -84,7 +84,7 @@ def add_file(request):
         try:
             new_file = File.objects.create(
                 name=file_name if file_name else file_obj.name,
-                s3_key=file_name if file_name else file_obj.name,
+                s3_key=file_obj.name,
                 created_by=request.user
             )
             new_file.save()
